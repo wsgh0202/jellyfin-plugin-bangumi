@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -32,17 +32,28 @@ public partial class BangumiApi
 
     public async Task<IEnumerable<Subject>> SearchSubject(string keyword, SubjectType? type, CancellationToken token)
     {
+        var result = await SearchSubjectSorted(keyword, type, token);
+
+        return result.Select(s => s.Item1);
+    }
+
+    public async Task<IEnumerable<(Subject, int)>> SearchSubjectSorted(string keyword, SubjectType? type, CancellationToken token)
+    {
         if (string.IsNullOrEmpty(keyword))
             return [];
         try
         {
+            SearchResult<Subject>? searchResult;
+            IEnumerable<Subject> list;
+
             if (Plugin.Instance!.Configuration.UseTestingSearchApi)
             {
                 var searchParams = new SearchParams { Keyword = keyword };
                 if (type != null)
                     searchParams.Filter.Type = [type.Value];
-                var searchResult = await Post<SearchResult<Subject>>($"{BaseUrl}/v0/search/subjects", new JsonContent(searchParams), token);
-                return searchResult?.Data ?? [];
+
+                searchResult = await Post<SearchResult<Subject>>($"{BaseUrl}/v0/search/subjects", new JsonContent(searchParams), token);
+                list = searchResult?.Data ?? [];
             }
             else
             {
@@ -52,23 +63,24 @@ public partial class BangumiApi
                 var url = $"{BaseUrl}/search/subject/{Uri.EscapeDataString(keyword)}?responseGroup=large";
                 if (type != null)
                     url += $"&type={(int)type}";
-                var searchResult = await Get<SearchResult<Subject>>(url, token);
-                var list = searchResult?.List ?? [];
 
-                if (Plugin.Instance.Configuration.SortByFuzzScore && list.Count() > 1)
-                {
-                    // 仅使用前 5 个条目获取别名并排序
-                    var num = 5;
-                    var tasks = list.Take(num).Select(subject => GetSubject(subject.Id, token));
-                    var subjectWithInfobox = await Task.WhenAll(tasks);
-
-                    var sortedSubjects =
-                        Subject.SortByFuzzScore(subjectWithInfobox.Where(s => s != null).Cast<Subject>().ToList(), keyword);
-                    return sortedSubjects.Concat(list.Skip(num)).ToList();
-                }
-
-                return Subject.SortBySimilarity(list, keyword);
+                searchResult = await Get<SearchResult<Subject>>(url, token);
+                list = searchResult?.List ?? [];
             }
+
+            if (Plugin.Instance.Configuration.SortByFuzzScore && list.Count() > 1)
+            {
+                // 仅使用前 5 个条目获取别名并排序
+                var num = 5;
+                var tasks = list.Take(num).Select(subject => GetSubject(subject.Id, token));
+                var subjectWithInfobox = await Task.WhenAll(tasks);
+
+                var sortedSubjects =
+                    Subject.GetSortedScoresByFuzz(subjectWithInfobox.Where(s => s != null).Cast<Subject>().ToList(), keyword);
+                return sortedSubjects.Concat(list.Skip(num).Select(s => (s, 0))).ToList();
+            }
+
+            return Subject.GetSortedScoresBySimilarity(list, keyword);
         }
         catch (JsonException)
         {
@@ -123,7 +135,7 @@ public partial class BangumiApi
         var initialResult = result;
         var history = new HashSet<int>();
 
-        RequestEpisodeList:
+RequestEpisodeList:
         if (offset < 0)
             return result.Data;
         if (offset > result.Total)
