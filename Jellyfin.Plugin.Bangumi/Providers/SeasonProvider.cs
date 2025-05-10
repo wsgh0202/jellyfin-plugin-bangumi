@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Jellyfin.Plugin.Bangumi.Configuration;
@@ -15,7 +16,7 @@ using MediaBrowser.Model.Providers;
 
 namespace Jellyfin.Plugin.Bangumi.Providers;
 
-public class SeasonProvider(BangumiApi api, Logger<EpisodeProvider> log, ILibraryManager libraryManager)
+public partial class SeasonProvider(BangumiApi api, Logger<EpisodeProvider> log, ILibraryManager libraryManager)
     : IRemoteMetadataProvider<Season, SeasonInfo>, IHasOrder
 {
     private static PluginConfiguration Configuration => Plugin.Instance!.Configuration;
@@ -37,6 +38,12 @@ public class SeasonProvider(BangumiApi api, Logger<EpisodeProvider> log, ILibrar
         { 9, "九" },
         { 10, "十" },
     };
+
+    [GeneratedRegex(@"(特典|NCOP|NCED)", RegexOptions.IgnoreCase, "zh-CN")]
+    private static partial Regex MiddleSpecialFolderRegex();
+
+    [GeneratedRegex(@"\b(SPs?|Specials?|PVs?|Previews?|Scans?|menus?|Fonts?|Extras?|CDs?|bonus|Music|Subs?|Subtitles?)\b", RegexOptions.IgnoreCase, "zh-CN")]
+    private static partial Regex EndSpecialFolderRegex();
 
     public async Task<MetadataResult<Season>> GetMetadata(SeasonInfo info, CancellationToken cancellationToken)
     {
@@ -165,9 +172,22 @@ public class SeasonProvider(BangumiApi api, Logger<EpisodeProvider> log, ILibrar
         return result;
     }
 
+    private static bool IsSpecialFolder(string folderName)
+    {
+        var regexs = new[]
+        {
+            MiddleSpecialFolderRegex(),
+            EndSpecialFolderRegex()
+        };
+
+        return regexs.Any(regex => regex.IsMatch(folderName));
+    }
+
     private async Task<Subject?> SearchSubjectByFolderName(string folderName, CancellationToken cancellationToken)
     {
         var searchName = GetBangumiNameFromFolderName(folderName);
+        if (IsSpecialFolder(searchName)) return null;
+
         var subjects = await api.SearchSubjectSorted(searchName, SubjectType.Anime, cancellationToken);
         if (subjects == null || !subjects.Any()) return null;
 
