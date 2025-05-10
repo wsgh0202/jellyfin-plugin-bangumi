@@ -272,6 +272,11 @@ public partial class SeasonProvider(BangumiApi api, Logger<EpisodeProvider> log,
             current += c;
         }
 
+        if (current.Length > 0)
+        {
+            bracketContent.Add(current.Trim());
+        }
+
         // 匹配不到非括号内内容，默认返回第2个括号内的内容
         return bracketContent.Count > 1 ? bracketContent[1] : bracketContent[0];
     }
