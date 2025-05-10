@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -72,39 +72,50 @@ public class SeasonProvider(BangumiApi api, Logger<EpisodeProvider> log, ILibrar
         }
         else if (seasonPath is not null && libraryManager.FindByPath(seasonPath, true) is Series series)
         {
-            var previousSeason = series.Children
-                // Search "Season 2" for "Season 1" and "Season 2 Part X"
-                .Where(x => x.IndexNumber == info.IndexNumber - 1 || x.IndexNumber == info.IndexNumber)
-                .MaxBy(x => int.Parse(x.GetProviderId(Constants.ProviderName) ?? "0"));
-            if (previousSeason?.Path == info.Path)
+            log.Info($"Guessing season id by folder name:  {baseName}");
+            subject = await SearchSubjectByFolderName(baseName, cancellationToken);
+
+            if (subject != null)
             {
-                //This is the first season to be matched, which means season 1 and any other possible previous season is missing. We can just try match it by name.
-                string[] searchNames = [$"{series.Name} 第{chineseOrdinalChars[info.IndexNumber ?? 1]}季", $"{series.Name} Season {info.IndexNumber}"];
-                foreach (var searchName in searchNames)
-                {
-                    log.Info($"Guessing season id by name:  {searchName}");
-                    var searchResult = await api.SearchSubject(searchName, cancellationToken);
-                    if (int.TryParse(info.SeriesProviderIds.GetOrDefault(Constants.ProviderName), out var parentId))
-                    {
-                        searchResult = searchResult.Where(x => x.Id != parentId);
-                    }
-                    if (info.Year != null)
-                    {
-                        searchResult = searchResult.Where(x => x.ProductionYear == null || x.ProductionYear == info.Year?.ToString());
-                    }
-                    if (searchResult.Any())
-                        subjectId = searchResult.First().Id;
-                }
-                log.Info("Guessed result: {Name} (#{ID})", subject?.Name, subject?.Id);
+                subjectId = subject.Id;
+                log.Info("Guessed result: {Name} (#{ID})", subject.Name, subject.Id);
             }
-            if (int.TryParse(previousSeason?.GetProviderId(Constants.ProviderName), out var previousSeasonId) && previousSeasonId > 0)
+            else
             {
-                log.Info("Guessing season id from previous season #{ID}", previousSeasonId);
-                subject = await api.SearchNextSubject(previousSeasonId, cancellationToken);
-                if (subject != null)
+                var previousSeason = series.Children
+                    // Search "Season 2" for "Season 1" and "Season 2 Part X"
+                    .Where(x => x.IndexNumber == info.IndexNumber - 1 || x.IndexNumber == info.IndexNumber)
+                    .MaxBy(x => int.Parse(x.GetProviderId(Constants.ProviderName) ?? "0"));
+                if (previousSeason?.Path == info.Path)
                 {
-                    log.Info("Guessed result: {Name} (#{ID})", subject.Name, subject.Id);
-                    subjectId = subject.Id;
+                    //This is the first season to be matched, which means season 1 and any other possible previous season is missing. We can just try match it by name.
+                    string[] searchNames = [$"{series.Name} 第{chineseOrdinalChars[info.IndexNumber ?? 1]}季", $"{series.Name} Season {info.IndexNumber}"];
+                    foreach (var searchName in searchNames)
+                    {
+                        log.Info($"Guessing season id by name:  {searchName}");
+                        var searchResult = await api.SearchSubject(searchName, cancellationToken);
+                        if (int.TryParse(info.SeriesProviderIds.GetOrDefault(Constants.ProviderName), out var parentId))
+                        {
+                            searchResult = searchResult.Where(x => x.Id != parentId);
+                        }
+                        if (info.Year != null)
+                        {
+                            searchResult = searchResult.Where(x => x.ProductionYear == null || x.ProductionYear == info.Year?.ToString());
+                        }
+                        if (searchResult.Any())
+                            subjectId = searchResult.First().Id;
+                    }
+                    log.Info("Guessed result: {Name} (#{ID})", subject?.Name, subject?.Id);
+                }
+                if (int.TryParse(previousSeason?.GetProviderId(Constants.ProviderName), out var previousSeasonId) && previousSeasonId > 0)
+                {
+                    log.Info("Guessing season id from previous season #{ID}", previousSeasonId);
+                    subject = await api.SearchNextSubject(previousSeasonId, cancellationToken);
+                    if (subject != null)
+                    {
+                        log.Info("Guessed result: {Name} (#{ID})", subject.Name, subject.Id);
+                        subjectId = subject.Id;
+                    }
                 }
             }
         }
@@ -154,6 +165,19 @@ public class SeasonProvider(BangumiApi api, Logger<EpisodeProvider> log, ILibrar
         return result;
     }
 
+    private async Task<Subject?> SearchSubjectByFolderName(string folderName, CancellationToken cancellationToken)
+    {
+        var searchName = GetBangumiNameFromFolderName(folderName);
+        var subjects = await api.SearchSubjectSorted(searchName, SubjectType.Anime, cancellationToken);
+        if (subjects == null || !subjects.Any()) return null;
+
+        var bestMatched = subjects.FirstOrDefault();
+        // 相似度百分比，大于等于该值则认为匹配成功
+        int matchPercent = 80;
+
+        return bestMatched.Item2 >= matchPercent ? bestMatched.Item1 : null;
+    }
+
     public Task<IEnumerable<RemoteSearchResult>> GetSearchResults(SeasonInfo searchInfo, CancellationToken cancellationToken)
     {
         return Task.FromResult(Enumerable.Empty<RemoteSearchResult>());
@@ -162,5 +186,73 @@ public class SeasonProvider(BangumiApi api, Logger<EpisodeProvider> log, ILibrar
     public Task<HttpResponseMessage> GetImageResponse(string url, CancellationToken cancellationToken)
     {
         return api.GetHttpClient().GetAsync(url, cancellationToken);
+    }
+
+    /// <summary>
+    /// 获取番剧名称
+    /// </summary>
+    /// <param name="foldername">目录名</param>
+    /// <returns>番剧名称</returns>
+    private static string GetBangumiNameFromFolderName(string foldername)
+    {
+        // 常见的目录格式中，番剧名称通常为非括号内的内容
+        // 部分目录格式则是将包括番剧名称在内的元数据都用括号分割，通常情况番剧名称在第二个括号内容里
+
+        Dictionary<char, char> brackets = new()
+        {
+            ['['] = ']',
+            ['('] = ')',
+            ['【'] = '】',
+            ['（'] = '）',
+        };
+
+        // 括号内的内容
+        List<string> bracketContent = [];
+        // 当前分块内容
+        string current = string.Empty;
+        // 括号栈
+        Stack<char> stack = new();
+
+        foreach (char c in foldername)
+        {
+            if (brackets.ContainsKey(c)) // 匹配到左括号
+            {
+                if (stack.Count == 0)
+                {
+                    current = current.Trim();
+
+                    // 获取到非括号内内容，直接返回
+                    if (current.Length > 0)
+                    {
+                        return current;
+                    }
+                }
+
+                stack.Push(c);
+            }
+            else if (brackets.ContainsValue(c)) // 匹配到右括号
+            {
+                if (stack.Count > 0 && c == brackets[stack.Peek()]) // 嵌套括号匹配
+                {
+                    stack.Pop();
+
+                    // 匹配到最外层括号，记录其内容
+                    if (stack.Count == 0)
+                    {
+                        current += c;
+
+                        bracketContent.Add(current);
+                        current = string.Empty;
+
+                        continue;
+                    }
+                }
+            }
+
+            current += c;
+        }
+
+        // 匹配不到非括号内内容，默认返回第2个括号内的内容
+        return bracketContent.Count > 1 ? bracketContent[1] : bracketContent[0];
     }
 }
