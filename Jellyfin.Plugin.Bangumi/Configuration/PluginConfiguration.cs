@@ -1,4 +1,4 @@
-﻿using MediaBrowser.Model.Plugins;
+using MediaBrowser.Model.Plugins;
 
 namespace Jellyfin.Plugin.Bangumi.Configuration;
 
@@ -47,4 +47,24 @@ public class PluginConfiguration : BasePluginConfiguration
     public int DaysBeforeUsingArchiveData { get; set; } = 14;
 
     public int RatingUpdateMinInterval { get; set; } = 14;
+
+    public string DefaultSpExcludeRegexFullPath => "";
+
+    public string DefaultSpExcludeRegexFolderName => @"\b(SPs?|Specials?|PVs?|Previews?|Scans?|menus?|Fonts?|Extras?|CDs?|bonus|Music|Subs?|Subtitles?)\b
+(特典|NCOP|NCED)";
+
+    public string DefaultSpExcludeRegexFileName => "";
+
+    public string SpExcludeRegexFullPath { get; set; }
+
+    public string SpExcludeRegexFolderName { get; set; }
+
+    public string SpExcludeRegexFileName { get; set; }
+
+    public PluginConfiguration()
+    {
+        SpExcludeRegexFullPath = DefaultSpExcludeRegexFullPath;
+        SpExcludeRegexFolderName = DefaultSpExcludeRegexFolderName;
+        SpExcludeRegexFileName = DefaultSpExcludeRegexFileName;
+    }
 }
