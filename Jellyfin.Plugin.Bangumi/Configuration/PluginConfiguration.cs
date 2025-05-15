@@ -56,7 +56,7 @@ public class PluginConfiguration : BasePluginConfiguration
     public string DefaultSpExcludeRegexFolderName => @"\b(SPs?|Specials?|PVs?|Previews?|Scans?|menus?|Fonts?|Extras?|CDs?|bonus|Music|Subs?|Subtitles?)\b
 (特典|NCOP|NCED)";
 
-    public string DefaultSpExcludeRegexFileName => "";
+    public string DefaultSpExcludeRegexFileName => @"\b(WEB予告|NCOP\d*|NCED\d*|menu|PV\d+)\b";
 
     private string _spExcludeRegexFullPath;
     public string SpExcludeRegexFullPath
