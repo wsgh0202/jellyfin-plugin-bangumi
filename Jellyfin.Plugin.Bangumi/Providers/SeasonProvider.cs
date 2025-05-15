@@ -160,6 +160,16 @@ public partial class SeasonProvider(BangumiApi api, Logger<EpisodeProvider> log,
         if (subject.IsNSFW)
             result.Item.OfficialRating = "X";
 
+        // 获取到的季号可能不准确（例如fsn在Bangumi中前作是fz，但实际上季号一般是独立计算的），因此只在没有设置季号时尝试猜测
+        if (info.IndexNumber == null)
+        {
+            result.Item.IndexNumber = await GuessSeasonNumber(subject, cancellationToken);
+        }
+        else
+        {
+            result.Item.IndexNumber = info.IndexNumber;
+        }
+
         (await api.GetSubjectPersonInfos(subject.Id, cancellationToken)).ToList().ForEach(result.AddPerson);
         (await api.GetSubjectCharacters(subject.Id, cancellationToken)).ToList().ForEach(result.AddPerson);
 
@@ -285,5 +295,35 @@ public partial class SeasonProvider(BangumiApi api, Logger<EpisodeProvider> log,
 
         // 匹配不到非括号内内容，默认返回第2个括号内的内容
         return bracketContent.Count > 1 ? bracketContent[1] : bracketContent[0];
+    }
+
+    private async Task<int?> GuessSeasonNumber(Subject subject, CancellationToken cancellationToken)
+    {
+        if (BangumiApi.IsOVAOrMovie(subject)) return null;
+        if (subject.Platform != SubjectPlatform.Tv) return null;
+
+        log.Info($"Guessing season number for {subject.Name} ({subject.Id})");
+
+        int maxRequestCount = 10;
+        // 查找所有前传条目
+        var subjects = await api.SearchPreviousSubjects(subject.Id, maxRequestCount, cancellationToken);
+
+        // 达到最大请求次数，可能是前传条目过多
+        if (subjects.Count == maxRequestCount + 1)
+        {
+            Subject earliest = subjects.Last().OrderBy(s => s.Id).First();
+            var prev = api.SearchPreviousSubject(earliest.Id, 1, cancellationToken);
+
+            if (prev == null) return null;
+            // 还能继续查找前传条目，超出最大请求次数，无法判断季号
+            if (prev.Id != earliest.Id) return null;
+        }
+
+        // 根据前传数量判断季号
+        return subjects.Count switch
+        {
+            0 => null,// 找不到当前条目，无法判断
+            _ => subjects.Count,// 
+        };
     }
 }

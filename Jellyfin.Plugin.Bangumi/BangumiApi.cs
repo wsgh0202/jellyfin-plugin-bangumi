@@ -195,17 +195,17 @@ RequestEpisodeList:
         return await Get<IEnumerable<RelatedSubject>>($"{BaseUrl}/v0/subjects/{id}/subjects", token);
     }
 
+    public static bool IsOVAOrMovie(Subject subject)
+    {
+        return subject.Platform == SubjectPlatform.Movie
+               || subject.Platform == SubjectPlatform.OVA
+               || subject.GenreTags.Contains("OVA")
+               || subject.GenreTags.Contains("剧场版");
+    }
+
     public async Task<Subject?> SearchNextSubject(int id, CancellationToken token)
     {
         if (id <= 0) return null;
-
-        bool SeriesSequelUnqualified(Subject subject)
-        {
-            return subject.Platform == SubjectPlatform.Movie
-                   || subject.Platform == SubjectPlatform.OVA
-                   || subject.GenreTags.Contains("OVA")
-                   || subject.GenreTags.Contains("剧场版");
-        }
 
         var requestCount = 0;
         //What would happen in Emby if I use `_plugin`?
@@ -217,7 +217,7 @@ RequestEpisodeList:
             var relatedSubject = subjectsQueue.Dequeue();
             var subjectCandidate = await GetSubject(relatedSubject.Id, token);
             requestCount++;
-            if (subjectCandidate != null && SeriesSequelUnqualified(subjectCandidate))
+            if (subjectCandidate != null && IsOVAOrMovie(subjectCandidate))
             {
                 var nextRelatedSubjects = await GetRelatedSubjects(subjectCandidate.Id, token);
                 foreach (var nextRelatedSubject in nextRelatedSubjects?.Where(item => item.Relation == SubjectRelation.Sequel) ?? [])
@@ -235,6 +235,84 @@ RequestEpisodeList:
 
         Console.WriteLine($"BangumiApi: Season guess of id #{id} failed with {requestCount} searches");
         return null;
+    }
+
+    /// <summary>
+    /// 获取前传条目
+    /// </summary>
+    /// <param name="id">Bangumi条目id</param>
+    /// <param name="maxRequestCount">最大查找层数</param>
+    /// <param name="token"></param>
+    /// <returns>
+    /// 返回距离 <paramref name="id"/> 条目最多前 <paramref name="maxRequestCount"/> 季的条目直至第一季，
+    /// <paramref name="id"/> 本身是第一季的话则返回自身，
+    /// 如果 <paramref name="id"/> 条目不存在则返回null
+    /// </returns>
+
+    public async Task<Subject?> SearchPreviousSubject(int id, int maxRequestCount, CancellationToken token)
+    {
+        var subjects = await SearchPreviousSubjects(id, maxRequestCount, token, true);
+        return subjects.Last().FirstOrDefault();
+    }
+
+    /// <summary>
+    /// 获取前传条目
+    /// </summary>
+    /// <param name="id">Bangumi条目id</param>
+    /// <param name="maxRequestCount">最大查找层数</param>
+    /// <param name="token"></param>
+    /// <param name="searchOneRelatedOnly">有多个前传时只查询其中一个</param>
+    /// <returns>前传条目列表，第一个数组是 <paramref name="id"/> 的条目，之后每个数组是上一个数组的前传条目集合</returns>
+    public async Task<List<Subject[]>> SearchPreviousSubjects(int id, int maxRequestCount, CancellationToken token, bool searchOneRelatedOnly = false)
+    {
+        if (id <= 0 || maxRequestCount <= 0) return [];
+
+        // 获取当前 Subject
+        var currentSubject = await GetSubject(id, token);
+        if (currentSubject == null) return [];
+
+        var result = new List<Subject[]> { new Subject[] { currentSubject } };
+
+        for (int i = 0; i < maxRequestCount; i++)
+        {
+            Subject[] lastLoopSubjects = result.Last();
+
+            List<Subject> currentLoopResult = [];
+            foreach (var subject in lastLoopSubjects)
+            {
+                // 获取相关条目
+                var relatedSubjects = await GetRelatedSubjects(subject.Id, token);
+                if (relatedSubjects == null) continue;
+
+                // 过滤出前传类型的条目
+                var prequels = relatedSubjects.Where(item => item.Relation == SubjectRelation.Prequel).ToArray();
+                if (prequels.Length == 0) continue;
+
+                if (searchOneRelatedOnly)
+                {
+                    // 默认取最早创建的条目
+                    prequels = prequels.OrderBy(item => item.Id).Take(1).ToArray();
+                }
+
+                // 转换为 Subject
+                foreach (var item in prequels)
+                {
+                    if (currentLoopResult.Any(s => s.Id == item.Id)) continue;
+
+                    var s = await GetSubject(item.Id, token);
+                    if (s == null) continue;
+
+                    currentLoopResult.Add(s);
+                }
+            }
+
+            // 找不到更多前传条目，提前结束循环
+            if (currentLoopResult.Count == 0) break;
+
+            result.Add([.. currentLoopResult]);
+        }
+
+        return result;
     }
 
     /// <summary>
