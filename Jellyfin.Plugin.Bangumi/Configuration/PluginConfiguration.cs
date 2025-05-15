@@ -123,6 +123,8 @@ public class PluginConfiguration : BasePluginConfiguration
         var patternFullPath = patterns.Split("\n");
         foreach (var item in patternFullPath)
         {
+            if (string.IsNullOrEmpty(item)) continue;
+
             try
             {
                 Regex regex = new Regex(item, RegexOptions.IgnoreCase);
