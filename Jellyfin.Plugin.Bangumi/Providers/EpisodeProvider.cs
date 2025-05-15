@@ -178,7 +178,7 @@ public partial class EpisodeProvider(BangumiApi api, Logger<EpisodeProvider> log
 
     private bool MatchSpExcludeRegexes(string filePath, bool checkParent)
     {
-        bool result = PluginConfiguration.MatchSpExcludeRegexes(
+        bool result = PluginConfiguration.MatchExcludeRegexes(
             Plugin.Instance!.Configuration.SpExcludeRegexFullPath,
             filePath,
             (p, e) => log.Error($"Check if \"{filePath}\" is special episode using regex \"{p}\" failed:  {e.Message}"));
@@ -191,7 +191,7 @@ public partial class EpisodeProvider(BangumiApi api, Logger<EpisodeProvider> log
         {
             if (checkParent && !string.IsNullOrEmpty(folderName))
             {
-                result |= PluginConfiguration.MatchSpExcludeRegexes(
+                result |= PluginConfiguration.MatchExcludeRegexes(
                     Plugin.Instance!.Configuration.SpExcludeRegexFolderName,
                     folderName,
                     (p, e) => log.Error($"Guessing \"{folderName}\" season id using regex \"{p}\" failed:  {e.Message}"));
@@ -199,7 +199,7 @@ public partial class EpisodeProvider(BangumiApi api, Logger<EpisodeProvider> log
         }
 
         var fileName = Path.GetFileName(filePath);
-        result |= PluginConfiguration.MatchSpExcludeRegexes(
+        result |= PluginConfiguration.MatchExcludeRegexes(
             Plugin.Instance!.Configuration.SpExcludeRegexFileName,
             fileName,
             (p, e) => log.Error($"Guessing \"{fileName}\" season id using regex \"{p}\" failed:  {e.Message}"));
