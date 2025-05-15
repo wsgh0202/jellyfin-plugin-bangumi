@@ -208,4 +208,19 @@
         e.preventDefault();
         container.querySelector('#SpExcludeRegexFileName').value = configuration['DefaultSpExcludeRegexFileName'];
     });
+
+    container.querySelector('#MiscExcludeRegexFullPathResetBtn').addEventListener('click', function (e) {
+        e.preventDefault();
+        container.querySelector('#MiscExcludeRegexFullPath').value = configuration['DefaultMiscExcludeRegexFullPath'];
+    });
+
+    container.querySelector('#MiscExcludeRegexFolderNameResetBtn').addEventListener('click', function (e) {
+        e.preventDefault();
+        container.querySelector('#MiscExcludeRegexFolderName').value = configuration['DefaultMiscExcludeRegexFolderName'];
+    });
+
+    container.querySelector('#MiscExcludeRegexFileNameResetBtn').addEventListener('click', function (e) {
+        e.preventDefault();
+        container.querySelector('#MiscExcludeRegexFileName').value = configuration['DefaultMiscExcludeRegexFileName'];
+    });
 })();

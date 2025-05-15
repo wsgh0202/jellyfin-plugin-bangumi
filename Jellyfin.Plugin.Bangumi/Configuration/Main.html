@@ -237,10 +237,53 @@
                 </div>
                 <div class="paperList">
                     <h3 classname="paperListLabel">
+                        杂项文件排除正则表达式
+                    </h3>
+                    <div class="fieldDescription">
+                        <p>下列正则用于排除杂项内容，如CM、PV、Menu、NCOP、NCED等类型文件，将其季号固定为null</p>
+                        <ul>
+                            <li>一行一条正则表达式</li>
+                            <li>忽略大小写</li>
+                            <li>从上往下按顺序执行匹配，直到匹配成功或全部失败</li>
+                        </ul>
+                    </div>
+                    <div class="listItem listItem-border">
+                        <div class="inputContainer">
+                            <label class="textareaLabel" forid="MiscExcludeRegexFullPath">完整路径匹配</label>
+                            <button id="MiscExcludeRegexFullPathResetBtn" is="paper-icon-button-light" title="重置" type="button" class="paper-icon-button-light">
+                                <span aria-hidden="true" class="material-icons replay"></span>
+                            </button>
+                            <textarea class="textarea-mono emby-textarea" rows="5" cols="100" style="overflow: auto;" id="MiscExcludeRegexFullPath"></textarea>
+                            <div class="fieldDescription">匹配完整文件路径，通常用于排除特定番剧目录内容，如：<code>E:\libs\animation\冴えない彼女の育てかた\SP\PV01.mkv</code></div>
+                        </div>
+                    </div>
+                    <div class="listItem listItem-border">
+                        <div class="inputContainer">
+                            <label class="textareaLabel" forid="MiscExcludeRegexFolderName">目录名称匹配</label>
+                            <button id="MiscExcludeRegexFolderNameResetBtn" is="paper-icon-button-light" title="重置" type="button" class="paper-icon-button-light">
+                                <span aria-hidden="true" class="material-icons replay"></span>
+                            </button>
+                            <textarea class="textarea-mono emby-textarea" rows="5" cols="100" style="overflow: auto;" id="MiscExcludeRegexFolderName"></textarea>
+                            <div class="fieldDescription">通用文件目录名称匹配，只匹配文件所在目录，如：<code>SP</code></div>
+                        </div>
+                    </div>
+                    <div class="listItem listItem-border">
+                        <div class="inputContainer">
+                            <label class="textareaLabel" forid="MiscExcludeRegexFileName">文件名匹配</label>
+                            <button id="MiscExcludeRegexFileNameResetBtn" is="paper-icon-button-light" title="重置" type="button" class="paper-icon-button-light">
+                                <span aria-hidden="true" class="material-icons replay"></span>
+                            </button>
+                            <textarea class="textarea-mono emby-textarea" rows="5" cols="100" style="overflow: auto;" id="MiscExcludeRegexFileName"></textarea>
+                            <div class="fieldDescription">通用文件名称匹配，如：<code>PV01.mkv</code></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="paperList">
+                    <h3 classname="paperListLabel">
                         特典文件排除正则表达式
                     </h3>
                     <div class="fieldDescription">
-                        <p>下列正则用于排除非正篇内容，如CM、PV、Menu、SP等类型文件，避免错误设置季号</p>
+                        <p>下列正则用于排除特典内容，如SP、OVA、剧场版等类型文件，将其季号固定为0</p>
                         <ul>
                             <li>一行一条正则表达式</li>
                             <li>忽略大小写</li>

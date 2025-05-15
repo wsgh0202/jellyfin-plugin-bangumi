@@ -53,10 +53,10 @@ public class PluginConfiguration : BasePluginConfiguration
 
     public string DefaultSpExcludeRegexFullPath => "";
 
-    public string DefaultSpExcludeRegexFolderName => @"\b(SPs?|Specials?|PVs?|Previews?|Scans?|menus?|Fonts?|Extras?|CDs?|bonus|Music|Subs?|Subtitles?)\b
-(特典|NCOP|NCED)";
+    public string DefaultSpExcludeRegexFolderName => @"\b(SPs?|Specials?)\b
+特典";
 
-    public string DefaultSpExcludeRegexFileName => @"\b(WEB予告|NCOP\d*|NCED\d*|menu|PV\d+)\b";
+    public string DefaultSpExcludeRegexFileName => "";
 
     private string _spExcludeRegexFullPath;
     public string SpExcludeRegexFullPath
@@ -88,11 +88,52 @@ public class PluginConfiguration : BasePluginConfiguration
         }
     }
 
+    public string DefaultMiscExcludeRegexFullPath => "";
+
+    public string DefaultMiscExcludeRegexFolderName => @"\b(PVs?|Previews?|Scans?|menus?|Fonts?|Extras?|CDs?|bonus|Music|Subs?|Subtitles?)\b
+NCOP|NCED";
+
+    public string DefaultMiscExcludeRegexFileName => @"\b(WEB予告|NCOP\d*|NCED\d*|menu|PV\d+)\b";
+
+    private string _miscExcludeRegexFullPath;
+    public string MiscExcludeRegexFullPath
+    {
+        get => _miscExcludeRegexFullPath;
+        set
+        {
+            _miscExcludeRegexFullPath = CheckRegexes(value);
+        }
+    }
+
+    private string _miscExcludeRegexFolderName;
+    public string MiscExcludeRegexFolderName
+    {
+        get => _miscExcludeRegexFolderName;
+        set
+        {
+            _miscExcludeRegexFolderName = CheckRegexes(value);
+        }
+    }
+
+    private string _miscExcludeRegexFileName;
+    public string MiscExcludeRegexFileName
+    {
+        get => _miscExcludeRegexFileName;
+        set
+        {
+            _miscExcludeRegexFileName = CheckRegexes(value);
+        }
+    }
+
     public PluginConfiguration()
     {
         _spExcludeRegexFullPath = CheckRegexes(DefaultSpExcludeRegexFullPath);
         _spExcludeRegexFolderName = CheckRegexes(DefaultSpExcludeRegexFolderName);
         _spExcludeRegexFileName = CheckRegexes(DefaultSpExcludeRegexFileName);
+
+        _miscExcludeRegexFullPath = CheckRegexes(DefaultMiscExcludeRegexFullPath);
+        _miscExcludeRegexFolderName = CheckRegexes(DefaultMiscExcludeRegexFolderName);
+        _miscExcludeRegexFileName = CheckRegexes(DefaultMiscExcludeRegexFileName);
     }
 
     /// <summary>
