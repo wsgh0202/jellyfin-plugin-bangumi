@@ -168,17 +168,20 @@ public partial class SeasonProvider(BangumiApi api, Logger<EpisodeProvider> log,
 
     private bool IsSpecialFolder(string folderPath)
     {
-        var folderName = Path.GetFileName(folderPath);
-
         bool result = PluginConfiguration.MatchSpExcludeRegexes(
             Plugin.Instance!.Configuration.SpExcludeRegexFullPath,
             folderPath,
             (p, e) => log.Error($"Guessing \"{folderPath}\" season id using regex \"{p}\" failed:  {e.Message}"));
 
-        result |= PluginConfiguration.MatchSpExcludeRegexes(
+        var folderName = Path.GetFileName(folderPath);
+        // 忽略根目录名称
+        if (libraryManager.FindByPath(folderPath, true) is not Series)
+        {
+            result |= PluginConfiguration.MatchSpExcludeRegexes(
             Plugin.Instance!.Configuration.SpExcludeRegexFolderName,
             folderName,
             (p, e) => log.Error($"Guessing \"{folderName}\" season id using regex \"{p}\" failed:  {e.Message}"));
+        }
 
         return result;
     }

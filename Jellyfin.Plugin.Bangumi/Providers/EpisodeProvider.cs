@@ -107,10 +107,9 @@ public partial class EpisodeProvider(BangumiApi api, Logger<EpisodeProvider> log
         result.Item.OriginalTitle = episode.OriginalName;
         result.Item.IndexNumber = (int)episode.Order + localConfiguration.Offset;
         result.Item.Overview = string.IsNullOrEmpty(episode.Description) ? null : episode.Description;
-        result.Item.ParentIndexNumber = info.ParentIndexNumber ?? 1;
 
         var parent = libraryManager.FindByPath(Path.GetDirectoryName(info.Path)!, true);
-        if (IsSpecial(info.Path, true) || episode.Type == EpisodeType.Special || info.ParentIndexNumber == 0)
+        if (IsSpecial(info.Path, true) || episode.Type == EpisodeType.Special)
         {
             result.Item.ParentIndexNumber = 0;
         }
@@ -119,6 +118,14 @@ public partial class EpisodeProvider(BangumiApi api, Logger<EpisodeProvider> log
             result.Item.SeasonId = season.Id;
             if (season.IndexNumber != null)
                 result.Item.ParentIndexNumber = season.IndexNumber;
+        }
+        else if (parent is Series)
+        {
+            result.Item.ParentIndexNumber = 1;
+        }
+        else
+        {
+            result.Item.ParentIndexNumber = info.ParentIndexNumber ?? 1;
         }
 
         if (episode.Type == EpisodeType.Normal && result.Item.ParentIndexNumber > 0)
@@ -176,29 +183,19 @@ public partial class EpisodeProvider(BangumiApi api, Logger<EpisodeProvider> log
             filePath,
             (p, e) => log.Error($"Check if \"{filePath}\" is special episode using regex \"{p}\" failed:  {e.Message}"));
 
-        var parentPath = Path.GetDirectoryName(filePath);
+        var parentPath = Path.GetDirectoryName(filePath) ?? "";
         var folderName = Path.GetFileName(parentPath);
 
-        if (checkParent)
+        // 忽略根目录名称
+        if (libraryManager.FindByPath(parentPath, true) is not Series)
         {
-            if (parentPath == null)
+            if (checkParent && !string.IsNullOrEmpty(folderName))
             {
-                checkParent = false;
+                result |= PluginConfiguration.MatchSpExcludeRegexes(
+                    Plugin.Instance!.Configuration.SpExcludeRegexFolderName,
+                    folderName,
+                    (p, e) => log.Error($"Guessing \"{folderName}\" season id using regex \"{p}\" failed:  {e.Message}"));
             }
-            else
-            {
-                // check if parent is a season(subfolder), otherwise it is a series(root folder), check on root folder is not needed
-                checkParent = libraryManager.FindByPath(parentPath, true) is Season;
-            }
-        }
-
-
-        if (checkParent && !string.IsNullOrEmpty(folderName))
-        {
-            result |= PluginConfiguration.MatchSpExcludeRegexes(
-                Plugin.Instance!.Configuration.SpExcludeRegexFolderName,
-                folderName,
-                (p, e) => log.Error($"Guessing \"{folderName}\" season id using regex \"{p}\" failed:  {e.Message}"));
         }
 
         var fileName = Path.GetFileName(filePath);
