@@ -1,3 +1,6 @@
+using System;
+using System.Linq;
+using System.Text.RegularExpressions;
 using MediaBrowser.Model.Plugins;
 
 namespace Jellyfin.Plugin.Bangumi.Configuration;
@@ -55,16 +58,82 @@ public class PluginConfiguration : BasePluginConfiguration
 
     public string DefaultSpExcludeRegexFileName => "";
 
-    public string SpExcludeRegexFullPath { get; set; }
+    private string _spExcludeRegexFullPath;
+    public string SpExcludeRegexFullPath
+    {
+        get => _spExcludeRegexFullPath;
+        set
+        {
+            _spExcludeRegexFullPath = CheckRegexes(value);
+        }
+    }
 
-    public string SpExcludeRegexFolderName { get; set; }
+    private string _spExcludeRegexFolderName;
+    public string SpExcludeRegexFolderName
+    {
+        get => _spExcludeRegexFolderName;
+        set
+        {
+            _spExcludeRegexFolderName = CheckRegexes(value);
+        }
+    }
 
-    public string SpExcludeRegexFileName { get; set; }
+    private string _spExcludeRegexFileName;
+    public string SpExcludeRegexFileName
+    {
+        get => _spExcludeRegexFileName;
+        set
+        {
+            _spExcludeRegexFileName = CheckRegexes(value);
+        }
+    }
 
     public PluginConfiguration()
     {
-        SpExcludeRegexFullPath = DefaultSpExcludeRegexFullPath;
-        SpExcludeRegexFolderName = DefaultSpExcludeRegexFolderName;
-        SpExcludeRegexFileName = DefaultSpExcludeRegexFileName;
+        _spExcludeRegexFullPath = CheckRegexes(DefaultSpExcludeRegexFullPath);
+        _spExcludeRegexFolderName = CheckRegexes(DefaultSpExcludeRegexFolderName);
+        _spExcludeRegexFileName = CheckRegexes(DefaultSpExcludeRegexFileName);
+    }
+
+    /// <summary>
+    /// 检查保存的正则表达式，去除空行
+    /// </summary>
+    /// <param name="regexes">用户保存内容</param>
+    /// <returns>过滤后的配置</returns>
+    private static string CheckRegexes(string regexes)
+    {
+        if (string.IsNullOrWhiteSpace(regexes))
+            return string.Empty;
+
+        var regexArray = regexes.Split("\n");
+
+        return string.Join("\n", regexArray.Select(r => r.Trim())
+            .Where(r => r.Length > 0));
+    }
+
+    /// <summary>
+    /// 特典文件排除正则表达式匹配
+    /// </summary>
+    /// <param name="patterns">正则表达式配置</param>
+    /// <param name="input">要匹配的文本</param>
+    /// <param name="failedCallback">匹配报错回调，参数：当前匹配的正则表达式、异常对象</param>
+    /// <returns></returns>
+    public static bool MatchSpExcludeRegexes(string patterns, string input, Action<string, Exception>? failedCallback = null)
+    {
+        var patternFullPath = patterns.Split("\n");
+        foreach (var item in patternFullPath)
+        {
+            try
+            {
+                Regex regex = new Regex(item, RegexOptions.IgnoreCase);
+                if (regex.IsMatch(input)) return true;
+            }
+            catch (Exception e)
+            {
+                failedCallback?.Invoke(item, e);
+            }
+        }
+
+        return false;
     }
 }

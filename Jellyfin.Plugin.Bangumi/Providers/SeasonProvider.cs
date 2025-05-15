@@ -39,12 +39,6 @@ public partial class SeasonProvider(BangumiApi api, Logger<EpisodeProvider> log,
         { 10, "十" },
     };
 
-    [GeneratedRegex(@"(特典|NCOP|NCED)", RegexOptions.IgnoreCase, "zh-CN")]
-    private static partial Regex MiddleSpecialFolderRegex();
-
-    [GeneratedRegex(@"\b(SPs?|Specials?|PVs?|Previews?|Scans?|menus?|Fonts?|Extras?|CDs?|bonus|Music|Subs?|Subtitles?)\b", RegexOptions.IgnoreCase, "zh-CN")]
-    private static partial Regex EndSpecialFolderRegex();
-
     public async Task<MetadataResult<Season>> GetMetadata(SeasonInfo info, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -79,8 +73,8 @@ public partial class SeasonProvider(BangumiApi api, Logger<EpisodeProvider> log,
         }
         else if (seasonPath is not null && libraryManager.FindByPath(seasonPath, true) is Series series)
         {
-            log.Info($"Guessing season id by folder name:  {baseName}");
-            subject = await SearchSubjectByFolderName(baseName, cancellationToken);
+            log.Info($"Guessing season id by folder path:  {info.Path}");
+            subject = await SearchSubjectByFolderPath(info.Path, cancellationToken);
 
             if (subject != null)
             {
@@ -172,21 +166,30 @@ public partial class SeasonProvider(BangumiApi api, Logger<EpisodeProvider> log,
         return result;
     }
 
-    private static bool IsSpecialFolder(string folderName)
+    private bool IsSpecialFolder(string folderPath)
     {
-        var regexs = new[]
-        {
-            MiddleSpecialFolderRegex(),
-            EndSpecialFolderRegex()
-        };
+        var folderName = Path.GetFileName(folderPath);
 
-        return regexs.Any(regex => regex.IsMatch(folderName));
+        bool result = PluginConfiguration.MatchSpExcludeRegexes(
+            Plugin.Instance!.Configuration.SpExcludeRegexFullPath,
+            folderPath,
+            (p, e) => log.Error($"Guessing \"{folderPath}\" season id using regex \"{p}\" failed:  {e.Message}"));
+
+        result |= PluginConfiguration.MatchSpExcludeRegexes(
+            Plugin.Instance!.Configuration.SpExcludeRegexFolderName,
+            folderName,
+            (p, e) => log.Error($"Guessing \"{folderName}\" season id using regex \"{p}\" failed:  {e.Message}"));
+
+        return result;
     }
 
-    private async Task<Subject?> SearchSubjectByFolderName(string folderName, CancellationToken cancellationToken)
+    private async Task<Subject?> SearchSubjectByFolderPath(string folderPath, CancellationToken cancellationToken)
     {
+        if (IsSpecialFolder(folderPath)) return null;
+
+        var folderName = Path.GetFileName(folderPath);
         var searchName = GetBangumiNameFromFolderName(folderName);
-        if (IsSpecialFolder(searchName)) return null;
+        log.Info($"Guessing season id by folder name:  {searchName}");
 
         var subjects = await api.SearchSubjectSorted(searchName, SubjectType.Anime, cancellationToken);
         if (subjects == null || !subjects.Any()) return null;

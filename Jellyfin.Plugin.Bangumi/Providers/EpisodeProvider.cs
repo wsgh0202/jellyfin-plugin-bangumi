@@ -169,9 +169,13 @@ public partial class EpisodeProvider(BangumiApi api, Logger<EpisodeProvider> log
     [GeneratedRegex(@"[^\w]PV([^a-zA-Z]|$)")]
     private static partial Regex PreviewEpisodeFileNameRegex();
 
-    private bool IsSpecial(string filePath, bool checkParent = true)
+    private bool MatchSpExcludeRegexes(string filePath, bool checkParent)
     {
-        var fileName = Path.GetFileName(filePath);
+        bool result = PluginConfiguration.MatchSpExcludeRegexes(
+            Plugin.Instance!.Configuration.SpExcludeRegexFullPath,
+            filePath,
+            (p, e) => log.Error($"Check if \"{filePath}\" is special episode using regex \"{p}\" failed:  {e.Message}"));
+
         var parentPath = Path.GetDirectoryName(filePath);
         var folderName = Path.GetFileName(parentPath);
 
@@ -188,8 +192,27 @@ public partial class EpisodeProvider(BangumiApi api, Logger<EpisodeProvider> log
             }
         }
 
-        return SpecialEpisodeFileNameRegex().IsMatch(fileName) ||
-               checkParent && SpecialEpisodeFileNameRegex().IsMatch(folderName ?? "");
+
+        if (checkParent && !string.IsNullOrEmpty(folderName))
+        {
+            result |= PluginConfiguration.MatchSpExcludeRegexes(
+                Plugin.Instance!.Configuration.SpExcludeRegexFolderName,
+                folderName,
+                (p, e) => log.Error($"Guessing \"{folderName}\" season id using regex \"{p}\" failed:  {e.Message}"));
+        }
+
+        var fileName = Path.GetFileName(filePath);
+        result |= PluginConfiguration.MatchSpExcludeRegexes(
+            Plugin.Instance!.Configuration.SpExcludeRegexFileName,
+            fileName,
+            (p, e) => log.Error($"Guessing \"{fileName}\" season id using regex \"{p}\" failed:  {e.Message}"));
+
+        return result;
+    }
+
+    private bool IsSpecial(string filePath, bool checkParent = true)
+    {
+        return MatchSpExcludeRegexes(filePath, checkParent);
     }
 
     private async Task<Model.Episode?> GetEpisode(EpisodeInfo info, LocalConfiguration localConfiguration, CancellationToken token)
