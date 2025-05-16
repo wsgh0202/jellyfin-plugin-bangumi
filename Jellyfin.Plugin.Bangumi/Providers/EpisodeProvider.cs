@@ -62,6 +62,21 @@ public partial class EpisodeProvider(BangumiApi api, Logger<EpisodeProvider> log
     public async Task<MetadataResult<Episode>> GetMetadata(EpisodeInfo info, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
+
+        var result = new MetadataResult<Episode> { ResultLanguage = Constants.Language };
+
+        if (info == null) return result;
+
+        if (IsMisc(info.Path))
+        {
+            log.Info($"misc file match, skip getting metadata: {info.Path}");
+
+            // 清除之前获取的元数据
+            result.Item = new Episode();
+            result.HasMetadata = true;
+            return result;
+        }
+
         var localConfiguration = await LocalConfiguration.ForPath(info.Path);
         Model.Episode? episode = null;
 
@@ -76,8 +91,6 @@ public partial class EpisodeProvider(BangumiApi api, Logger<EpisodeProvider> log
         {
             log.Error($"metadata for {info.Path} error: {e.Message}");
         }
-
-        var result = new MetadataResult<Episode> { ResultLanguage = Constants.Language };
 
         if (episode == null)
         {
@@ -181,7 +194,7 @@ public partial class EpisodeProvider(BangumiApi api, Logger<EpisodeProvider> log
         bool result = PluginConfiguration.MatchExcludeRegexes(
             Plugin.Instance!.Configuration.SpExcludeRegexFullPath,
             filePath,
-            (p, e) => log.Error($"Check if \"{filePath}\" is special episode using regex \"{p}\" failed:  {e.Message}"));
+            (p, e) => log.Error($"Check if filePath \"{filePath}\" is special episode using regex \"{p}\" failed:  {e.Message}"));
 
         var parentPath = Path.GetDirectoryName(filePath) ?? "";
         var folderName = Path.GetFileName(parentPath);
@@ -194,7 +207,7 @@ public partial class EpisodeProvider(BangumiApi api, Logger<EpisodeProvider> log
                 result |= PluginConfiguration.MatchExcludeRegexes(
                     Plugin.Instance!.Configuration.SpExcludeRegexFolderName,
                     folderName,
-                    (p, e) => log.Error($"Guessing \"{folderName}\" season id using regex \"{p}\" failed:  {e.Message}"));
+                    (p, e) => log.Error($"Check if folderName \"{folderName}\" is special episode using regex \"{p}\" failed:  {e.Message}"));
             }
         }
 
@@ -202,7 +215,7 @@ public partial class EpisodeProvider(BangumiApi api, Logger<EpisodeProvider> log
         result |= PluginConfiguration.MatchExcludeRegexes(
             Plugin.Instance!.Configuration.SpExcludeRegexFileName,
             fileName,
-            (p, e) => log.Error($"Guessing \"{fileName}\" season id using regex \"{p}\" failed:  {e.Message}"));
+            (p, e) => log.Error($"Check if fileName \"{fileName}\" is special episode using regex \"{p}\" failed:  {e.Message}"));
 
         return result;
     }
@@ -210,6 +223,37 @@ public partial class EpisodeProvider(BangumiApi api, Logger<EpisodeProvider> log
     private bool IsSpecial(string filePath, bool checkParent = true)
     {
         return MatchSpExcludeRegexes(filePath, checkParent);
+    }
+
+    private bool IsMisc(string filePath)
+    {
+        bool result = PluginConfiguration.MatchExcludeRegexes(
+            Plugin.Instance!.Configuration.MiscExcludeRegexFullPath,
+            filePath,
+            (p, e) => log.Error($"Check if filePath \"{filePath}\" is misc file using regex \"{p}\" failed:  {e.Message}"));
+
+        var parentPath = Path.GetDirectoryName(filePath) ?? "";
+        var folderName = Path.GetFileName(parentPath);
+
+        // 忽略根目录名称
+        if (libraryManager.FindByPath(parentPath, true) is not Series)
+        {
+            if (string.IsNullOrEmpty(folderName))
+            {
+                result |= PluginConfiguration.MatchExcludeRegexes(
+                    Plugin.Instance!.Configuration.MiscExcludeRegexFolderName,
+                    folderName,
+                    (p, e) => log.Error($"Check if folderName \"{folderName}\" is misc file using regex \"{p}\" failed:  {e.Message}"));
+            }
+        }
+
+        var fileName = Path.GetFileName(filePath);
+        result |= PluginConfiguration.MatchExcludeRegexes(
+            Plugin.Instance!.Configuration.MiscExcludeRegexFileName,
+            fileName,
+            (p, e) => log.Error($"Check if fileName \"{fileName}\" is misc file using regex \"{p}\" failed:  {e.Message}"));
+
+        return result;
     }
 
     private async Task<Model.Episode?> GetEpisode(EpisodeInfo info, LocalConfiguration localConfiguration, CancellationToken token)

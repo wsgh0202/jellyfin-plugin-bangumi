@@ -53,6 +53,20 @@ public partial class SeasonProvider(BangumiApi api, Logger<EpisodeProvider> log,
 
         var seasonPath = Path.GetDirectoryName(info.Path);
 
+        if (IsMiscFolder(info.Path))
+        {
+            log.Info($"{info.Path} matches misc folder, skip searching");
+
+            // 清除之前获取的元数据
+            result.HasMetadata = true;
+            result.Item = new Season()
+            {
+                Name = baseName
+            };
+
+            return result;
+        }
+
         var subjectId = 0;
         if (localConfiguration.Id != 0)
         {
@@ -172,6 +186,26 @@ public partial class SeasonProvider(BangumiApi api, Logger<EpisodeProvider> log,
 
         (await api.GetSubjectPersonInfos(subject.Id, cancellationToken)).ToList().ForEach(result.AddPerson);
         (await api.GetSubjectCharacters(subject.Id, cancellationToken)).ToList().ForEach(result.AddPerson);
+
+        return result;
+    }
+
+    private bool IsMiscFolder(string folderPath)
+    {
+        bool result = PluginConfiguration.MatchExcludeRegexes(
+            Plugin.Instance!.Configuration.MiscExcludeRegexFullPath,
+            folderPath,
+            (p, e) => log.Error($"Guessing \"{folderPath}\" season id using regex \"{p}\" failed:  {e.Message}"));
+
+        var folderName = Path.GetFileName(folderPath);
+        // 忽略根目录名称
+        if (libraryManager.FindByPath(folderPath, true) is not Series)
+        {
+            result |= PluginConfiguration.MatchExcludeRegexes(
+            Plugin.Instance!.Configuration.MiscExcludeRegexFolderName,
+            folderName,
+            (p, e) => log.Error($"Guessing \"{folderName}\" season id using regex \"{p}\" failed:  {e.Message}"));
+        }
 
         return result;
     }
