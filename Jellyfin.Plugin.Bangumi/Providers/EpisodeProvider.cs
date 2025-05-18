@@ -191,23 +191,27 @@ public partial class EpisodeProvider(BangumiApi api, Logger<EpisodeProvider> log
 
     private bool MatchSpExcludeRegexes(string filePath, bool checkParent)
     {
+        if (string.IsNullOrEmpty(filePath)) return false;
+
         bool result = PluginConfiguration.MatchExcludeRegexes(
             Plugin.Instance!.Configuration.SpExcludeRegexFullPath,
             filePath,
             (p, e) => log.Error($"Check if filePath \"{filePath}\" is special episode using regex \"{p}\" failed:  {e.Message}"));
+        if (result) return result;
 
         var parentPath = Path.GetDirectoryName(filePath) ?? "";
         var folderName = Path.GetFileName(parentPath);
 
-        // 忽略根目录名称
-        if (libraryManager.FindByPath(parentPath, true) is not Series)
+        if (checkParent && !string.IsNullOrEmpty(folderName))
         {
-            if (checkParent && !string.IsNullOrEmpty(folderName))
+            // 忽略根目录名称
+            if (libraryManager.FindByPath(parentPath, true) is not Series)
             {
                 result |= PluginConfiguration.MatchExcludeRegexes(
                     Plugin.Instance!.Configuration.SpExcludeRegexFolderName,
                     folderName,
                     (p, e) => log.Error($"Check if folderName \"{folderName}\" is special episode using regex \"{p}\" failed:  {e.Message}"));
+                if (result) return result;
             }
         }
 
@@ -227,23 +231,27 @@ public partial class EpisodeProvider(BangumiApi api, Logger<EpisodeProvider> log
 
     private bool IsMisc(string filePath)
     {
+        if (string.IsNullOrEmpty(filePath)) return false;
+
         bool result = PluginConfiguration.MatchExcludeRegexes(
             Plugin.Instance!.Configuration.MiscExcludeRegexFullPath,
             filePath,
             (p, e) => log.Error($"Check if filePath \"{filePath}\" is misc file using regex \"{p}\" failed:  {e.Message}"));
+        if (result) return result;
 
         var parentPath = Path.GetDirectoryName(filePath) ?? "";
         var folderName = Path.GetFileName(parentPath);
 
-        // 忽略根目录名称
-        if (libraryManager.FindByPath(parentPath, true) is not Series)
+        if (!string.IsNullOrEmpty(folderName))
         {
-            if (string.IsNullOrEmpty(folderName))
+            // 忽略根目录名称
+            if (libraryManager.FindByPath(parentPath, true) is not Series)
             {
                 result |= PluginConfiguration.MatchExcludeRegexes(
                     Plugin.Instance!.Configuration.MiscExcludeRegexFolderName,
                     folderName,
                     (p, e) => log.Error($"Check if folderName \"{folderName}\" is misc file using regex \"{p}\" failed:  {e.Message}"));
+                if (result) return result;
             }
         }
 
