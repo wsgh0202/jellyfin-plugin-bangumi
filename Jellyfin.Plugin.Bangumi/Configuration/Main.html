@@ -235,89 +235,100 @@
                     </label>
                     <div class="fieldDescription">排序时会加入条目别名，提高首个条目匹配率。测试接口未启用此算法</div>
                 </div>
-                <div class="paperList">
+                <div class="bangumi-tab-container">
                     <h3 classname="paperListLabel">
-                        杂项文件排除正则表达式
+                        文件排除正则表达式
                     </h3>
                     <div class="fieldDescription">
-                        <p>下列正则用于排除杂项内容，如CM、PV、Menu、NCOP、NCED等类型文件，将其季号固定为null</p>
-                        <ul>
-                            <li>一行一条正则表达式</li>
-                            <li>忽略大小写</li>
-                            <li>从上往下按顺序执行匹配，直到匹配成功或全部失败</li>
-                        </ul>
+                        下列正则用于在获取元数据时匹配或排除指定的文件（夹），以便提高准确性，减少不必要的搜索
                     </div>
-                    <div class="listItem listItem-border">
-                        <div class="inputContainer">
-                            <label class="textareaLabel" forid="MiscExcludeRegexFullPath">完整路径匹配</label>
-                            <button id="MiscExcludeRegexFullPathResetBtn" is="paper-icon-button-light" title="重置" type="button" class="paper-icon-button-light">
-                                <span aria-hidden="true" class="material-icons replay"></span>
-                            </button>
-                            <textarea class="textarea-mono emby-textarea" rows="5" cols="100" style="overflow: auto;" id="MiscExcludeRegexFullPath"></textarea>
-                            <div class="fieldDescription">匹配完整文件路径，通常用于排除特定番剧目录内容，如：<code>E:\libs\animation\冴えない彼女の育てかた\SP\PV01.mkv</code></div>
+                    <p />
+                    <div class="bangumi-tab-header">
+                        <div class="bangumi-tab-header-button active" data-tab="tabSpExcludeRegex">杂项文件排除</div>
+                        <div class="bangumi-tab-header-button" data-tab="tabMiscExcludeRegex">特典文件排除</div>
+                    </div>
+                    <div class="bangumi-tab-content active" data-tab="tabSpExcludeRegex">
+                        <div class="paperList">
+                            <div class="fieldDescription">
+                                <p>下列正则用于排除杂项内容，如CM、PV、Menu、NCOP、NCED等类型文件，将其季号固定为null</p>
+                                <ul>
+                                    <li>一行一条正则表达式</li>
+                                    <li>忽略大小写</li>
+                                    <li>从上往下按顺序执行匹配，直到匹配成功或全部失败</li>
+                                </ul>
+                            </div>
+                            <div class="listItem listItem-border">
+                                <div class="inputContainer">
+                                    <label class="textareaLabel" forid="MiscExcludeRegexFullPath">完整路径匹配</label>
+                                    <button id="MiscExcludeRegexFullPathResetBtn" is="paper-icon-button-light" title="重置" type="button" class="paper-icon-button-light">
+                                        <span aria-hidden="true" class="material-icons replay"></span>
+                                    </button>
+                                    <textarea class="textarea-mono emby-textarea" rows="5" cols="100" style="overflow: auto;" id="MiscExcludeRegexFullPath"></textarea>
+                                    <div class="fieldDescription">匹配完整文件路径，通常用于排除特定番剧目录内容，如：<code>E:\libs\animation\冴えない彼女の育てかた\SP\PV01.mkv</code></div>
+                                </div>
+                            </div>
+                            <div class="listItem listItem-border">
+                                <div class="inputContainer">
+                                    <label class="textareaLabel" forid="MiscExcludeRegexFolderName">目录名称匹配</label>
+                                    <button id="MiscExcludeRegexFolderNameResetBtn" is="paper-icon-button-light" title="重置" type="button" class="paper-icon-button-light">
+                                        <span aria-hidden="true" class="material-icons replay"></span>
+                                    </button>
+                                    <textarea class="textarea-mono emby-textarea" rows="5" cols="100" style="overflow: auto;" id="MiscExcludeRegexFolderName"></textarea>
+                                    <div class="fieldDescription">通用文件目录名称匹配，只匹配文件所在目录，如：<code>SP</code></div>
+                                </div>
+                            </div>
+                            <div class="listItem listItem-border">
+                                <div class="inputContainer">
+                                    <label class="textareaLabel" forid="MiscExcludeRegexFileName">文件名匹配</label>
+                                    <button id="MiscExcludeRegexFileNameResetBtn" is="paper-icon-button-light" title="重置" type="button" class="paper-icon-button-light">
+                                        <span aria-hidden="true" class="material-icons replay"></span>
+                                    </button>
+                                    <textarea class="textarea-mono emby-textarea" rows="5" cols="100" style="overflow: auto;" id="MiscExcludeRegexFileName"></textarea>
+                                    <div class="fieldDescription">通用文件名称匹配，如：<code>PV01.mkv</code></div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="listItem listItem-border">
-                        <div class="inputContainer">
-                            <label class="textareaLabel" forid="MiscExcludeRegexFolderName">目录名称匹配</label>
-                            <button id="MiscExcludeRegexFolderNameResetBtn" is="paper-icon-button-light" title="重置" type="button" class="paper-icon-button-light">
-                                <span aria-hidden="true" class="material-icons replay"></span>
-                            </button>
-                            <textarea class="textarea-mono emby-textarea" rows="5" cols="100" style="overflow: auto;" id="MiscExcludeRegexFolderName"></textarea>
-                            <div class="fieldDescription">通用文件目录名称匹配，只匹配文件所在目录，如：<code>SP</code></div>
-                        </div>
-                    </div>
-                    <div class="listItem listItem-border">
-                        <div class="inputContainer">
-                            <label class="textareaLabel" forid="MiscExcludeRegexFileName">文件名匹配</label>
-                            <button id="MiscExcludeRegexFileNameResetBtn" is="paper-icon-button-light" title="重置" type="button" class="paper-icon-button-light">
-                                <span aria-hidden="true" class="material-icons replay"></span>
-                            </button>
-                            <textarea class="textarea-mono emby-textarea" rows="5" cols="100" style="overflow: auto;" id="MiscExcludeRegexFileName"></textarea>
-                            <div class="fieldDescription">通用文件名称匹配，如：<code>PV01.mkv</code></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="paperList">
-                    <h3 classname="paperListLabel">
-                        特典文件排除正则表达式
-                    </h3>
-                    <div class="fieldDescription">
-                        <p>下列正则用于排除特典内容，如SP、OVA、剧场版等类型文件，将其季号固定为0</p>
-                        <ul>
-                            <li>一行一条正则表达式</li>
-                            <li>忽略大小写</li>
-                            <li>从上往下按顺序执行匹配，直到匹配成功或全部失败</li>
-                        </ul>
-                    </div>
-                    <div class="listItem listItem-border">
-                        <div class="inputContainer">
-                            <label class="textareaLabel" for="SpExcludeRegexFullPath">完整路径匹配</label>
-                            <button id="SpExcludeRegexFullPathResetBtn" is="paper-icon-button-light" title="重置" type="button" class="paper-icon-button-light">
-                                <span aria-hidden="true" class="material-icons replay"></span>
-                            </button>
-                            <textarea class="textarea-mono emby-textarea" rows="5" cols="100" style="overflow: auto;" id="SpExcludeRegexFullPath"></textarea>
-                            <div class="fieldDescription">匹配完整文件路径，通常用于排除特定番剧目录内容，如：<code>E:\libs\animation\冴えない彼女の育てかた\SP\PV01.mkv</code></div>
-                        </div>
-                    </div>
-                    <div class="listItem listItem-border">
-                        <div class="inputContainer">
-                            <label class="textareaLabel" for="SpExcludeRegexFolderName">目录名称匹配</label>
-                            <button id="SpExcludeRegexFolderNameResetBtn" is="paper-icon-button-light" title="重置" type="button" class="paper-icon-button-light">
-                                <span aria-hidden="true" class="material-icons replay"></span>
-                            </button>
-                            <textarea class="textarea-mono emby-textarea" rows="5" cols="100" style="overflow: auto;" id="SpExcludeRegexFolderName"></textarea>
-                            <div class="fieldDescription">通用文件目录名称匹配，只匹配文件所在目录，如：<code>SP</code></div>
-                        </div>
-                    </div>
-                    <div class="listItem listItem-border">
-                        <div class="inputContainer">
-                            <label class="textareaLabel" for="SpExcludeRegexFileName">文件名匹配</label>
-                            <button id="SpExcludeRegexFileNameResetBtn" is="paper-icon-button-light" title="重置" type="button" class="paper-icon-button-light">
-                                <span aria-hidden="true" class="material-icons replay"></span>
-                            </button>
-                            <textarea class="textarea-mono emby-textarea" rows="5" cols="100" style="overflow: auto;" id="SpExcludeRegexFileName"></textarea>
-                            <div class="fieldDescription">通用文件名称匹配，如：<code>PV01.mkv</code></div>
+                    <div class="bangumi-tab-content" data-tab="tabMiscExcludeRegex">
+                        <div class="paperList">
+                            <div class="fieldDescription">
+                                <p>下列正则用于排除特典内容，如SP、OVA、剧场版等类型文件，将其季号固定为0</p>
+                                <ul>
+                                    <li>一行一条正则表达式</li>
+                                    <li>忽略大小写</li>
+                                    <li>从上往下按顺序执行匹配，直到匹配成功或全部失败</li>
+                                </ul>
+                            </div>
+                            <div class="listItem listItem-border">
+                                <div class="inputContainer">
+                                    <label class="textareaLabel" for="SpExcludeRegexFullPath">完整路径匹配</label>
+                                    <button id="SpExcludeRegexFullPathResetBtn" is="paper-icon-button-light" title="重置" type="button" class="paper-icon-button-light">
+                                        <span aria-hidden="true" class="material-icons replay"></span>
+                                    </button>
+                                    <textarea class="textarea-mono emby-textarea" rows="5" cols="100" style="overflow: auto;" id="SpExcludeRegexFullPath"></textarea>
+                                    <div class="fieldDescription">匹配完整文件路径，通常用于排除特定番剧目录内容，如：<code>E:\libs\animation\冴えない彼女の育てかた\SP\PV01.mkv</code></div>
+                                </div>
+                            </div>
+                            <div class="listItem listItem-border">
+                                <div class="inputContainer">
+                                    <label class="textareaLabel" for="SpExcludeRegexFolderName">目录名称匹配</label>
+                                    <button id="SpExcludeRegexFolderNameResetBtn" is="paper-icon-button-light" title="重置" type="button" class="paper-icon-button-light">
+                                        <span aria-hidden="true" class="material-icons replay"></span>
+                                    </button>
+                                    <textarea class="textarea-mono emby-textarea" rows="5" cols="100" style="overflow: auto;" id="SpExcludeRegexFolderName"></textarea>
+                                    <div class="fieldDescription">通用文件目录名称匹配，只匹配文件所在目录，如：<code>SP</code></div>
+                                </div>
+                            </div>
+                            <div class="listItem listItem-border">
+                                <div class="inputContainer">
+                                    <label class="textareaLabel" for="SpExcludeRegexFileName">文件名匹配</label>
+                                    <button id="SpExcludeRegexFileNameResetBtn" is="paper-icon-button-light" title="重置" type="button" class="paper-icon-button-light">
+                                        <span aria-hidden="true" class="material-icons replay"></span>
+                                    </button>
+                                    <textarea class="textarea-mono emby-textarea" rows="5" cols="100" style="overflow: auto;" id="SpExcludeRegexFileName"></textarea>
+                                    <div class="fieldDescription">通用文件名称匹配，如：<code>PV01.mkv</code></div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

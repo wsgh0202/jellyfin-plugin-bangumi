@@ -223,4 +223,22 @@
         e.preventDefault();
         container.querySelector('#MiscExcludeRegexFileName').value = configuration['DefaultMiscExcludeRegexFileName'];
     });
+
+    container.querySelectorAll('.bangumi-tab-container').forEach(tabContainer => {
+        tabContainer.querySelectorAll('.bangumi-tab-header-button').forEach(btn => {
+            btn.addEventListener('click', function () {
+                tabContainer.querySelectorAll('.bangumi-tab-header-button').forEach(b => b.classList.remove('active'));
+                tabContainer.querySelectorAll('.bangumi-tab-content').forEach(tc => tc.classList.remove('active'));
+
+                btn.classList.add('active');
+
+                let id = btn.getAttribute('data-tab');
+                tabContainer.querySelectorAll('.bangumi-tab-content').forEach(c => {
+                    if (c.getAttribute('data-tab') == id) {
+                        c.classList.add('active');
+                    }
+                });
+            });
+        });
+    });
 })();
