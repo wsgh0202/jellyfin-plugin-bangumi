@@ -18,14 +18,6 @@ public class Episode
 
     private readonly CancellationToken _token = new();
 
-    private void CreateSeason(string path)
-    {
-        _libraryManager.CreateItem(new MediaBrowser.Controller.Entities.TV.Season()
-        {
-            Path = FakePath.Create(path)
-        }, null);
-    }
-
     [TestMethod]
     public void ProviderInfo()
     {
@@ -149,7 +141,7 @@ public class Episode
         Assert.AreNotEqual(episodeData.Item.ParentIndexNumber, 0, "should not mark folder as special");
         Assert.AreEqual("167720", episodeData.Item.ProviderIds[Constants.ProviderName], "should return the right episode id");
 
-        CreateSeason("妄想学生会 OVA");
+        FakePath.CreateSeason(_libraryManager, "妄想学生会 OVA");
         episodeData = await _provider.GetMetadata(new EpisodeInfo
         {
             Path = FakePath.CreateFile("妄想学生会 OVA/[VCB-Studio] Seitokai Yakuindomo [16][Ma10p_1080p][x265_flac].mkv"),
@@ -166,7 +158,7 @@ public class Episode
     [TestMethod]
     public async Task SpecialEpisodeFromSubFolder()
     {
-        CreateSeason("とある科学の超電磁砲S/Specials");
+        FakePath.CreateSeason(_libraryManager, "とある科学の超電磁砲S/Specials");
         var episodeData = await _provider.GetMetadata(new EpisodeInfo
         {
             Path = FakePath.CreateFile("とある科学の超電磁砲S/Specials/01.mkv"),
@@ -178,7 +170,7 @@ public class Episode
         Assert.IsNotNull(episodeData.Item, "episode data should not be null");
         Assert.AreEqual("MMR Ⅲ 〜もっとまるっと超電磁砲Ⅲ〜", episodeData.Item.Name, "should return the right episode title");
 
-        CreateSeason("Season 1 OVA");
+        FakePath.CreateSeason(_libraryManager, "Season 1 OVA");
         episodeData = await _provider.GetMetadata(new EpisodeInfo
         {
             Path = FakePath.CreateFile("Season 1 OVA/Seitokai Yakuindomo [16][Ma10p_1080p][x265_flac].mkv"),

@@ -175,13 +175,24 @@ public partial class SeasonProvider(BangumiApi api, Logger<EpisodeProvider> log,
             result.Item.OfficialRating = "X";
 
         // 获取到的季号可能不准确（例如fsn在Bangumi中前作是fz，但实际上季号一般是独立计算的），因此只在没有设置季号时尝试猜测
-        if (info.IndexNumber == null)
+        if (int.TryParse(info.ProviderIds.GetOrDefault(Constants.SeasonNumberProviderName), out var seasonNumber))
         {
-            result.Item.IndexNumber = await GuessSeasonNumber(subject, cancellationToken);
+            result.Item.ProviderIds.Add(Constants.SeasonNumberProviderName, seasonNumber.ToString());
         }
         else
         {
-            result.Item.IndexNumber = info.IndexNumber;
+            if (IsSpecialFolder(info.Path))
+            {
+                result.Item.ProviderIds.Add(Constants.SeasonNumberProviderName, "0");
+            }
+            else
+            {
+                var num = await GuessSeasonNumber(subject, cancellationToken);
+                if (num.HasValue)
+                {
+                    result.Item.ProviderIds.Add(Constants.SeasonNumberProviderName, num.ToString());
+                }
+            }
         }
 
         (await api.GetSubjectPersonInfos(subject.Id, cancellationToken)).ToList().ForEach(result.AddPerson);
@@ -341,8 +352,7 @@ public partial class SeasonProvider(BangumiApi api, Logger<EpisodeProvider> log,
 
     private async Task<int?> GuessSeasonNumber(Subject subject, CancellationToken cancellationToken)
     {
-        if (BangumiApi.IsOVAOrMovie(subject)) return null;
-        if (subject.Platform != SubjectPlatform.Tv) return null;
+        if (BangumiApi.IsOVAOrMovie(subject)) return 0;
 
         log.Info($"Guessing season number for {subject.Name} ({subject.Id})");
 

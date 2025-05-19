@@ -1,9 +1,10 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Jellyfin.Plugin.Bangumi.Providers;
 using Jellyfin.Plugin.Bangumi.Test.Util;
+using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Entities;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -13,9 +14,11 @@ namespace Jellyfin.Plugin.Bangumi.Test;
 [TestClass]
 public class Season
 {
+    private readonly Bangumi.Plugin _plugin = ServiceLocator.GetService<Bangumi.Plugin>();
     private readonly BangumiApi _api = ServiceLocator.GetService<BangumiApi>();
     private readonly SubjectImageProvider _imageProvider = ServiceLocator.GetService<SubjectImageProvider>();
     private readonly SeasonProvider _provider = ServiceLocator.GetService<SeasonProvider>();
+    private readonly ILibraryManager _libraryManager = ServiceLocator.GetService<ILibraryManager>();
 
     private readonly CancellationToken _token = new();
 
@@ -30,10 +33,10 @@ public class Season
     public async Task WithSeasonFolder()
     {
         var result = await _provider.GetMetadata(new SeasonInfo
-            {
-                Path = FakePath.Create("White Album 2/Season 1"),
-                ProviderIds = new Dictionary<string, string> { { Constants.ProviderName, "69496" } }
-            },
+        {
+            Path = FakePath.Create("White Album 2/Season 1"),
+            ProviderIds = new Dictionary<string, string> { { Constants.ProviderName, "69496" } }
+        },
             _token);
         Assert.IsTrue(result.HasMetadata, "should return metadata when folder name contains season");
     }
@@ -67,5 +70,40 @@ public class Season
         Assert.AreEqual(ImageType.Primary, _imageProvider.GetSupportedImages(season).First(), "should support primary image");
         var imgList = await _imageProvider.GetImages(new MediaBrowser.Controller.Entities.TV.Season { ProviderIds = new Dictionary<string, string> { { Constants.ProviderName, "69496" } } }, _token);
         Assert.IsTrue(imgList.Any(), "should return at least one image");
+    }
+
+    [TestMethod]
+    public async Task GuessSeasonNumber()
+    {
+        FakePath.CreateSeries(_libraryManager, "[DMG] 冴えない彼女の育てかた [BDRip][S1+S2+MOVIE]");
+
+        var result = await _provider.GetMetadata(new SeasonInfo
+        {
+            Path = FakePath.Create("[DMG] 冴えない彼女の育てかた [BDRip][S1+S2+MOVIE]/[DMG] 冴えない彼女の育てかた [BDRip]")
+        }, _token);
+        Assert.IsTrue(result.HasMetadata, "should return metadata when folder name contains season");
+        Assert.AreEqual("冴えない彼女の育てかた", result.Item.OriginalTitle, "should return the right season title");
+        Assert.AreEqual(100403, int.Parse(result.Item.ProviderIds.GetOrDefault(Constants.ProviderName) ?? ""), "should return the right season id");
+        Assert.AreEqual(1, int.Parse(result.Item.ProviderIds.GetOrDefault(Constants.SeasonNumberProviderName) ?? ""), "should return the right season number");
+
+        result = await _provider.GetMetadata(new SeasonInfo
+        {
+            Path = FakePath.Create("[DMG] 冴えない彼女の育てかた [BDRip][S1+S2+MOVIE]/[DMG] 冴えない彼女の育てかた♭ [BDRip]")
+        }, _token);
+        Assert.IsTrue(result.HasMetadata, "should return metadata when folder name contains season");
+        Assert.AreEqual("冴えない彼女の育てかた ♭", result.Item.OriginalTitle, "should return the right season title");
+        Assert.AreEqual(132734, int.Parse(result.Item.ProviderIds.GetOrDefault(Constants.ProviderName) ?? ""), "should return the right season id");
+        Assert.AreEqual(2, int.Parse(result.Item.ProviderIds.GetOrDefault(Constants.SeasonNumberProviderName) ?? ""), "should return the right season number");
+
+        // default api does not support fuzzy search
+        _plugin.Configuration.UseTestingSearchApi = true;
+        result = await _provider.GetMetadata(new SeasonInfo
+        {
+            Path = FakePath.Create("[DMG] 冴えない彼女の育てかた [BDRip][S1+S2+MOVIE]/[DMG] 劇場版 冴えない彼女の育てかた Fine [BDRip]")
+        }, _token);
+        Assert.IsTrue(result.HasMetadata, "should return metadata when folder name contains season");
+        Assert.AreEqual("冴えない彼女の育てかた Fine", result.Item.OriginalTitle, "should return the right season title");
+        Assert.AreEqual(231497, int.Parse(result.Item.ProviderIds.GetOrDefault(Constants.ProviderName) ?? ""), "should return the right season id");
+        Assert.AreEqual(0, int.Parse(result.Item.ProviderIds.GetOrDefault(Constants.SeasonNumberProviderName) ?? ""), "should return the right season number");
     }
 }

@@ -122,23 +122,24 @@ public partial class EpisodeProvider(BangumiApi api, Logger<EpisodeProvider> log
         result.Item.Overview = string.IsNullOrEmpty(episode.Description) ? null : episode.Description;
 
         var parent = libraryManager.FindByPath(Path.GetDirectoryName(info.Path)!, true);
-        if (IsSpecial(info.Path, true) || episode.Type == EpisodeType.Special)
-        {
-            result.Item.ParentIndexNumber = 0;
-        }
-        else if (parent is Season season)
+        if (parent is Season season)
         {
             result.Item.SeasonId = season.Id;
-            if (season.IndexNumber != null)
-                result.Item.ParentIndexNumber = season.IndexNumber;
+            if (season.ProviderIds.TryGetValue(Constants.SeasonNumberProviderName, out var seasonNum))
+                if (int.TryParse(seasonNum, out var num))
+                    result.Item.ParentIndexNumber = num;
         }
-        else if (parent is Series)
+
+        if (!result.Item.ParentIndexNumber.HasValue)
         {
-            result.Item.ParentIndexNumber = 1;
-        }
-        else
-        {
-            result.Item.ParentIndexNumber = info.ParentIndexNumber ?? 1;
+            if (IsSpecial(info.Path, true) || episode.Type == EpisodeType.Special)
+            {
+                result.Item.ParentIndexNumber = 0;
+            }
+            else
+            {
+                result.Item.ParentIndexNumber = 1;
+            }
         }
 
         if (episode.Type == EpisodeType.Normal && result.Item.ParentIndexNumber > 0)
