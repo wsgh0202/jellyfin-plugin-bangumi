@@ -145,9 +145,6 @@ public partial class EpisodeProvider(BangumiApi api, Logger<EpisodeProvider> log
         if (episode.Type == EpisodeType.Normal && result.Item.ParentIndexNumber > 0)
             return result;
 
-        // mark episode as special
-        result.Item.ParentIndexNumber = 0;
-
         // use title and overview from special episode subject if episode data is empty
         var series = await api.GetSubject(episode.ParentId, cancellationToken);
         if (series == null)
@@ -155,9 +152,9 @@ public partial class EpisodeProvider(BangumiApi api, Logger<EpisodeProvider> log
 
         // use title from special episode subject if episode data is empty
         if (string.IsNullOrEmpty(result.Item.Name))
-            result.Item.Name = series.Name;
+            result.Item.Name = Path.GetFileNameWithoutExtension(info.Path);
         if (string.IsNullOrEmpty(result.Item.OriginalTitle))
-            result.Item.OriginalTitle = series.OriginalName;
+            result.Item.OriginalTitle = Path.GetFileNameWithoutExtension(info.Path);
 
         var seasonNumber = parent is Season ? parent.IndexNumber : 1;
         if (!string.IsNullOrEmpty(episode.AirDate) && string.Compare(episode.AirDate, series.AirDate, StringComparison.Ordinal) < 0)
