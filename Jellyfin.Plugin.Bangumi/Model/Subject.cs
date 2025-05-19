@@ -143,7 +143,7 @@ public class Subject
             float percent = (1 - ((float)score / keyword.Length)) * 100;
 
             return (subject, percent);
-        }).OrderBy(s => s.percent)
+        }).OrderByDescending(s => s.percent)
         .Select(s => (s.subject, (int)Math.Round(s.percent)));
     }
 
