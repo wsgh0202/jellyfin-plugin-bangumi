@@ -53,7 +53,7 @@ public class PluginConfiguration : BasePluginConfiguration
 
     public string DefaultSpExcludeRegexFullPath => "";
 
-    public string DefaultSpExcludeRegexFolderName => @"\b(SPs?|Specials?)\b
+    public string DefaultSpExcludeRegexFolderName => @"\b(SPs?|Specials?|OVA|OAD)\b
 特典";
 
     public string DefaultSpExcludeRegexFileName => "";
