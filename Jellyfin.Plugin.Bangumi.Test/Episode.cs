@@ -484,4 +484,81 @@ public class Episode
         Assert.IsNotNull(episodeData.Item, "episode data should not be null");
         Assert.AreEqual("だから、思春期は終わらずに、青春は続いていく。", episodeData.Item.Name, "should return the right episode title");
     }
+
+    [TestMethod]
+    public async Task MultipleSeasonFolderRecognition()
+    {
+        _plugin.Configuration.AlwaysReplaceEpisodeNumber = true;
+
+        var season = FakePath.CreateSeason(_libraryManager, "恶魔高校D×D/恶魔高校D×D");
+        season.ProviderIds.Add(Constants.ProviderName, "15910");
+        season.ProviderIds.Add(Constants.SeasonNumberProviderName, "1");
+        var episodeData = await _provider.GetMetadata(new EpisodeInfo
+        {
+            Path = FakePath.CreateFile("恶魔高校D×D/恶魔高校D×D/1.mkv")
+        },
+            _token);
+        Assert.IsTrue(episodeData.HasMetadata, "episode data should not be null");
+        Assert.AreEqual(135870, int.Parse(episodeData.Item.ProviderIds[Constants.ProviderName]), "should return the right episode id");
+
+        season = FakePath.CreateSeason(_libraryManager, "恶魔高校D×D/恶魔高校D×D NEW");
+        season.ProviderIds.Add(Constants.ProviderName, "48700");
+        season.ProviderIds.Add(Constants.SeasonNumberProviderName, "2");
+        episodeData = await _provider.GetMetadata(new EpisodeInfo
+        {
+            Path = FakePath.CreateFile("恶魔高校D×D/恶魔高校D×D NEW/2.mkv")
+        },
+            _token);
+        Assert.IsTrue(episodeData.HasMetadata, "episode data should not be null");
+        Assert.AreEqual(288943, int.Parse(episodeData.Item.ProviderIds[Constants.ProviderName]), "should return the right episode id");
+
+        season = FakePath.CreateSeason(_libraryManager, "恶魔高校D×D/恶魔高校D×D BorN");
+        season.ProviderIds.Add(Constants.ProviderName, "106212");
+        season.ProviderIds.Add(Constants.SeasonNumberProviderName, "3");
+        episodeData = await _provider.GetMetadata(new EpisodeInfo
+        {
+            Path = FakePath.CreateFile("恶魔高校D×D/恶魔高校D×D BorN/3.mkv")
+        },
+            _token);
+        Assert.IsTrue(episodeData.HasMetadata, "episode data should not be null");
+        Assert.AreEqual(512723, int.Parse(episodeData.Item.ProviderIds[Constants.ProviderName]), "should return the right episode id");
+
+        season = FakePath.CreateSeason(_libraryManager, "恶魔高校D×D/恶魔高校D×D HERO");
+        season.ProviderIds.Add(Constants.ProviderName, "195845");
+        season.ProviderIds.Add(Constants.SeasonNumberProviderName, "4");
+        episodeData = await _provider.GetMetadata(new EpisodeInfo
+        {
+            Path = FakePath.CreateFile("恶魔高校D×D/恶魔高校D×D HERO/4.mkv")
+        },
+            _token);
+        Assert.IsTrue(episodeData.HasMetadata, "episode data should not be null");
+        Assert.AreEqual(786876, int.Parse(episodeData.Item.ProviderIds[Constants.ProviderName]), "should return the right episode id");
+
+        // 条目页面集号顺延自本篇，需要手动设置偏移
+        FakePath.CreateLocalConfiguration("恶魔高校D×D/恶魔高校D×D OAD", new Model.LocalConfiguration
+        {
+            Offset = -12
+        });
+        season = FakePath.CreateSeason(_libraryManager, "恶魔高校D×D/恶魔高校D×D OAD");
+        season.ProviderIds.Add(Constants.ProviderName, "46010");
+        season.ProviderIds.Add(Constants.SeasonNumberProviderName, "0");
+        episodeData = await _provider.GetMetadata(new EpisodeInfo
+        {
+            Path = FakePath.CreateFile("恶魔高校D×D/恶魔高校D×D OAD/1.mkv")
+        },
+            _token);
+        Assert.IsTrue(episodeData.HasMetadata, "episode data should not be null");
+        Assert.AreEqual(189392, int.Parse(episodeData.Item.ProviderIds[Constants.ProviderName]), "should return the right episode id");
+
+        season = FakePath.CreateSeason(_libraryManager, "恶魔高校D×D/恶魔高校D×D DX OAD");
+        season.ProviderIds.Add(Constants.ProviderName, "127827");
+        season.ProviderIds.Add(Constants.SeasonNumberProviderName, "0");
+        episodeData = await _provider.GetMetadata(new EpisodeInfo
+        {
+            Path = FakePath.CreateFile("恶魔高校D×D/恶魔高校D×D DX OAD/2.mkv")
+        },
+            _token);
+        Assert.IsTrue(episodeData.HasMetadata, "episode data should not be null");
+        Assert.AreEqual(503689, int.Parse(episodeData.Item.ProviderIds[Constants.ProviderName]), "should return the right episode id");
+    }
 }

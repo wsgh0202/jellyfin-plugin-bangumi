@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using Jellyfin.Plugin.Bangumi.Model;
 using MediaBrowser.Controller.Library;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -33,7 +34,7 @@ public class FakePath
     {
         var item = new MediaBrowser.Controller.Entities.TV.Series()
         {
-            Path = FakePath.Create(path)
+            Path = Create(path)
         };
         libraryManager.CreateItem(item, null);
 
@@ -44,11 +45,19 @@ public class FakePath
     {
         var item = new MediaBrowser.Controller.Entities.TV.Season()
         {
-            Path = FakePath.Create(path)
+            Path = Create(path)
         };
         libraryManager.CreateItem(item, null);
 
         return item;
+    }
+
+    public static void CreateLocalConfiguration(string path, LocalConfiguration config)
+    {
+        var fullpath = Create(path);
+        var filePath = Path.Join(fullpath, "bangumi.ini");
+
+        config?.SaveTo(filePath).Wait();
     }
 
     [AssemblyCleanup]
