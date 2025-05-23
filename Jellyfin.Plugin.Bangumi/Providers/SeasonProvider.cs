@@ -251,7 +251,7 @@ public partial class SeasonProvider(BangumiApi api, Logger<EpisodeProvider> log,
 
     private async Task<Subject?> SearchSubjectByFolderPath(string folderPath, CancellationToken cancellationToken)
     {
-        if (IsSpecialFolder(folderPath)) return null;
+        if (IsSpecialFolder(folderPath)) return null; // todo：识别特典内容、剧场版等
 
         var folderName = Path.GetFileName(folderPath);
         var searchName = GetBangumiNameFromFolderName(folderName);

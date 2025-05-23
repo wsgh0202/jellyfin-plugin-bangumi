@@ -43,7 +43,8 @@ public partial class EpisodeProvider(BangumiApi api, Logger<EpisodeProvider> log
         new(@"\[([\d\.]{2,})"),
         new(@"#([\d\.]{2,})"),
         new(@"(\d{2,})"),
-        new(@"\[([\d\.]+)\]")
+        new(@"\[([\d\.]+)\]"),
+        new(@"^([\d\.]+(\.\d+)?)\.[a-zA-Z]+$")
     ];
 
     private static readonly Regex[] _allSpecialEpisodeFileNameRegex =
@@ -80,7 +81,7 @@ public partial class EpisodeProvider(BangumiApi api, Logger<EpisodeProvider> log
         var localConfiguration = await LocalConfiguration.ForPath(info.Path);
         Model.Episode? episode = null;
 
-        // throw execption will cause the episode to not show up anywhere
+        // throw exception will cause the episode to not show up anywhere
         try
         {
             episode = await GetEpisode(info, localConfiguration, cancellationToken);
@@ -339,6 +340,19 @@ public partial class EpisodeProvider(BangumiApi api, Logger<EpisodeProvider> log
 SkipBangumiId:
         log.Info("searching episode in series episode list");
         var episodeListData = await api.GetSubjectEpisodeList(seriesId, type, episodeIndex.Value, token);
+
+        // 部分OVA独立一个条目页面，没有区分正篇或特典剧集
+        if (episodeListData != null
+            && !episodeListData.Any()
+            && type == EpisodeType.Special)
+        {
+            var subject = await api.GetSubject(seriesId, token);
+            if (subject != null &&
+                (subject.Platform == SubjectPlatform.OVA || subject.GenreTags.Contains("OVA")))
+            {
+                episodeListData = await api.GetSubjectEpisodeList(seriesId, EpisodeType.Normal, episodeIndex.Value, token);
+            }
+        }
 
         if (episodeListData == null)
         {
