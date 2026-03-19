@@ -83,25 +83,21 @@ public class EpisodeProvider(BangumiApi api, Logger<EpisodeProvider> log, ILibra
             (int)episode.Order + localConfiguration.Offset;
         result.Item.Overview = string.IsNullOrEmpty(episode.Description) ? null : episode.Description;
 
-        // 优先使用通过剧集猜测的季号，用于修正多季剧集放在同个目录的情况
-        result.Item.ParentIndexNumber = (int?)episode.SeasonNumber;
-
         // 通过目录的季id更新季号
         if (parent is Season season)
         {
             result.Item.SeasonId = season.Id;
-
-            if (!result.Item.ParentIndexNumber.HasValue)
+            if (season.ProviderIds.TryGetValue(Constants.SeasonNumberProviderName, out var seasonNum)
+                && int.TryParse(seasonNum, out var num))
             {
-                result.Item.ParentIndexNumber = parent.IndexNumber;
+                result.Item.ParentIndexNumber = num;
             }
         }
-        else if (parent is Series)
+
+        // 如果季号为空则使用通过剧集猜测的季号
+        if (!result.Item.ParentIndexNumber.HasValue)
         {
-            if (!result.Item.ParentIndexNumber.HasValue)
-            {
-                result.Item.ParentIndexNumber =1 ;
-            }
+            result.Item.ParentIndexNumber = (int?)episode.SeasonNumber ?? 1;
         }
 
         FillFallbackTitle(result.Item);
@@ -120,6 +116,11 @@ public class EpisodeProvider(BangumiApi api, Logger<EpisodeProvider> log, ILibra
                 if (string.IsNullOrEmpty(parentPath)) break;
                 parent = libraryManager.FindByPath(parentPath, true);
                 continue;
+            }
+
+            if (parent.ProviderIds.TryGetValue(Constants.SeasonNumberProviderName, out var seasonNum))
+            {
+                _ = int.TryParse(seasonNum, out seasonNumber);
             }
             break;
         }
