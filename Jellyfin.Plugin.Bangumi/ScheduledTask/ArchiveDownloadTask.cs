@@ -13,7 +13,7 @@ namespace Jellyfin.Plugin.Bangumi.ScheduledTask;
 public class ArchiveDownloadTask(BangumiApi api, ArchiveData archive, ITaskManager taskManager, Logger<ArchiveDownloadTask> log)
     : IScheduledTask
 {
-    private const string ArchiveReleaseUrl = "https://raw.githubusercontent.com/bangumi/Archive/master/aux/latest.json";
+    private const string ArchiveReleaseUrl = "https://raw.githubusercontent.com/wsgh0202/bangumi-archive-romaji/refs/heads/main/version/latest.json";
 
     public string Key => "ArchiveDataDownloadTask";
     public string Name => "离线数据库更新";
